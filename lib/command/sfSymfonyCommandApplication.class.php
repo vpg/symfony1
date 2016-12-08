@@ -25,6 +25,10 @@ class sfSymfonyCommandApplication extends sfCommandApplication
    */
   public function configure()
   {
+    
+    //Hack to make docker recettes cront tasks work
+    chdir(realpath(dirname(__FILE__).'/../../../../..'));
+    
     if (!isset($this->options['symfony_lib_dir']))
     {
       throw new sfInitializationException('You must pass a "symfony_lib_dir" option.');
