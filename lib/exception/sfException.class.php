@@ -213,11 +213,11 @@ class sfException extends Exception
     if (class_exists('sfContext', false) && sfContext::hasInstance())
     {
       $context = sfContext::getInstance();
-      $settingsTable = self::formatArrayAsHtml(sfDebug::settingsAsArray());
-      $requestTable  = self::formatArrayAsHtml(sfDebug::requestAsArray($context->getRequest()));
-      $responseTable = self::formatArrayAsHtml(sfDebug::responseAsArray($context->getResponse()));
-      $userTable     = self::formatArrayAsHtml(sfDebug::userAsArray($context->getUser()));
-      $globalsTable  = self::formatArrayAsHtml(sfDebug::globalsAsArray());
+      $settingsTable = self::formatArrayAsHtml(array());
+      $requestTable  = self::formatArrayAsHtml(array());
+      $responseTable = self::formatArrayAsHtml(array());
+      $userTable     = self::formatArrayAsHtml(array());
+      $globalsTable  = self::formatArrayAsHtml(array());
     }
 
     if (isset($response) && $response)
