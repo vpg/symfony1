@@ -56,6 +56,8 @@ class sfWidgetFormInputFileEditable extends sfWidgetFormInputFile
     $this->addOption('is_image', false);
     $this->addOption('edit_mode', true);
     $this->addOption('with_delete', true);
+    $this->addOption('with_preview', false);
+    $this->addOption('preview', array());
     $this->addOption('delete_label', 'remove the current file');
     $this->addOption('template', '%file%<br />%input%<br />%delete% %delete_label%');
   }
@@ -95,6 +97,9 @@ class sfWidgetFormInputFileEditable extends sfWidgetFormInputFile
       $deleteLabel = '';
     }
 
+    // Preview
+    $this->setPreview();
+
     return strtr($this->getOption('template'), array('%input%' => $input, '%delete%' => $delete, '%delete_label%' => $deleteLabel, '%file%' => $this->getFileAsTag($attributes)));
   }
 
@@ -107,6 +112,49 @@ class sfWidgetFormInputFileEditable extends sfWidgetFormInputFile
     else
     {
       return $this->getOption('file_src');
+    }
+  }
+
+  /**
+   * Set image preview
+   */
+  private function setPreview()
+  {
+    $previewData = $this->getOption('preview');
+    if ($this->getOption('with_preview') && !empty($previewData) && isset($previewData['isNew'])
+      && isset($previewData['imgDir']) && isset($previewData['value']) && isset($previewData['objectId']) && isset($previewData['moduleName'])
+    )
+    {
+      if (!$previewData['isNew'] && $previewData['value'])
+      {
+        $imgPath = '/images/' . sfConfig::get('sf_upload_dir_name') . '/' . $previewData['imgDir'] . '/' . $previewData['value'];
+        $deleteButton  = '';
+        if ($this->getOption('with_delete'))
+        {
+          $deleteButton = '<br/><a href="#"
+                onclick="
+                  if (confirm(\'' . __("Etes-vous sûr ?") . '\')) {
+                    $.ajax({
+                      url:\'' . url_for($previewData['moduleName'] . '/removeImage?id=' . $previewData['objectId']) . '\',
+                      success: function(){
+                        $(\'#picture_' . $previewData['objectId'] . '_' . 'image_preview\').remove();
+                        $(\'#picture[' . 'image' . ']\').value=\'\';
+                      }
+                  });
+                }">
+              <img src="/images/admingen/delete.png" border=0/>&nbsp;' . __("Supprimer l'image") . '</a><br />';
+        }
+        $this->setOption(
+          'template',
+          '<div id="picture_' . $previewData['objectId'] . '_' . 'image_preview">
+              <a href="' . $imgPath . '" class="lightbox">
+                <img align="absbottom" src="' . $imgPath . '" width="100" />
+              </a>
+                '. $deleteButton .'
+           </div> %input% <br />
+           %delete% %delete_label%'
+        );
+      }
     }
   }
 }
