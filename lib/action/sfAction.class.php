@@ -436,27 +436,43 @@ abstract class sfAction extends sfComponent
     return $this->getSecurityValue('credentials');
   }
 
-  /**
+  /*
    * Sets an alternate template for this sfAction.
    *
    * See 'Naming Conventions' in the 'Symfony View' documentation.
    *
    * @param string $name    Template name
    * @param string $module  The module (current if null)
+   * @param string $plugin  Check module into specific plugin module if module has not been overloaded into the application
+   * 
+   * 
+   * /!\ 2011-07-29 fvilpoix : http://trac.symfony-project.org/ticket/8492
+   * applying patch in order to be able to call a template in a plugin that has
+   * not been overloaded into the application.
+   * But it's not satisfying because template overloading is not supported
+   * 
    */
-  public function setTemplate($name, $module = null)
+  public function setTemplate($name, $module = null, $plugin = null) 
   {
     if (sfConfig::get('sf_logging_enabled'))
     {
       $this->dispatcher->notify(new sfEvent($this, 'application.log', array(sprintf('Change template to "%s/%s"', null === $module ? 'CURRENT' : $module, $name))));
     }
-
     if (null !== $module)
     {
-      $dir = $this->context->getConfiguration()->getTemplateDir($module, $name.sfView::SUCCESS.'.php');
-      $name = $dir.'/'.$name;
+      if (null !== $plugin) 
+      { 
+        // for security check 
+        if (in_array($module, sfConfig::get('sf_enabled_modules'))) 
+        { 
+          $name = sfConfig::get('sf_plugins_dir').'/'.$plugin.'/modules/'.$module.'/templates/'.$name; 
+        } 
+      } 
+      else 
+      { 
+        $name = sfConfig::get('sf_app_dir').'/modules/'.$module.'/templates/'.$name; 
+      }
     }
-
     sfConfig::set('symfony.view.'.$this->getModuleName().'_'.$this->getActionName().'_template', $name);
   }
 
