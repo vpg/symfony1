@@ -93,7 +93,6 @@ class sfFileLogger extends sfLogger
    */
   protected function doLog($message, $priority)
   {
-    flock($this->fp, LOCK_EX);
     fwrite($this->fp, strtr($this->format, array(
       '%type%'     => $this->type,
       '%message%'  => $message,
@@ -101,7 +100,6 @@ class sfFileLogger extends sfLogger
       '%priority%' => $this->getPriority($priority),
       '%EOL%'      => PHP_EOL,
     )));
-    flock($this->fp, LOCK_UN);
   }
 
   /**
