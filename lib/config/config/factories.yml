@@ -114,8 +114,8 @@ default:
       transport:
         class: Swift_SmtpTransport
         param:
-          host:       localhost
-          port:       25
+          host:       %smtp_host%
+          port:       %smtp_port%
           encryption: ~
           username:   ~
           password:   ~
