@@ -30,7 +30,10 @@ abstract class sfCommandApplication
     $currentTask    = null,
     $dispatcher     = null,
     $options        = array(),
-    $formatter      = null;
+    $formatter      = null,
+    $stdout = null,
+    $stdin = null,
+    $stderr = null;
 
   /**
    * Constructor.
@@ -42,10 +45,10 @@ abstract class sfCommandApplication
   public function __construct(sfEventDispatcher $dispatcher, sfFormatter $formatter = null, $options = array())
   {
     $this->dispatcher = $dispatcher;
-    $this->formatter = null === $formatter ? $this->guessBestFormatter(STDOUT) : $formatter;
-    $this->options = $options;
 
     $this->fixCgi();
+    $this->formatter = null === $formatter ? $this->guessBestFormatter('\STDOUT') : $formatter;
+    $this->options = $options;
 
     $argumentSet = new sfCommandArgumentSet(array(
       new sfCommandArgument('task', sfCommandArgument::REQUIRED, 'The task to execute'),
@@ -63,6 +66,13 @@ abstract class sfCommandApplication
     $this->configure();
 
     $this->registerTasks();
+  }
+
+   public function __destruct()
+  {
+    fclose($this->stdin);
+    fclose($this->stdout);
+    fclose($this->stderr);
   }
 
   /**
@@ -405,22 +415,22 @@ abstract class sfCommandApplication
 
     $messages[] = str_repeat(' ', $len);
 
-    fwrite(STDERR, "\n");
+    fwrite($this->stderr, "\n");
     foreach ($messages as $message)
     {
-      fwrite(STDERR, $this->formatter->format($message, 'ERROR', STDERR)."\n");
+      fwrite($this->stderr, $this->formatter->format($message, 'ERROR', $this->stderr)."\n");
     }
-    fwrite(STDERR, "\n");
+    fwrite($this->stderr, "\n");
 
     if (null !== $this->currentTask && $e instanceof sfCommandArgumentsException)
     {
-      fwrite(STDERR, $this->formatter->format(sprintf($this->currentTask->getSynopsis(), $this->getName()), 'INFO', STDERR)."\n");
-      fwrite(STDERR, "\n");
+      fwrite($this->stderr, $this->formatter->format(sprintf($this->currentTask->getSynopsis(), $this->getName()), 'INFO', $this->stderr)."\n");
+      fwrite($this->stderr, "\n");
     }
 
     if ($this->trace)
     {
-      fwrite(STDERR, $this->formatter->format("Exception trace:\n", 'COMMENT'));
+      fwrite($this->stderr, $this->formatter->format("Exception trace:\n", 'COMMENT'));
 
       // exception related properties
       $trace = $e->getTrace();
@@ -439,10 +449,10 @@ abstract class sfCommandApplication
         $file = isset($trace[$i]['file']) ? $trace[$i]['file'] : 'n/a';
         $line = isset($trace[$i]['line']) ? $trace[$i]['line'] : 'n/a';
 
-        fwrite(STDERR, sprintf(" %s%s%s at %s:%s\n", $class, $type, $function, $this->formatter->format($file, 'INFO', STDERR), $this->formatter->format($line, 'INFO', STDERR)));
+        fwrite($this->stderr, sprintf(" %s%s%s at %s:%s\n", $class, $type, $function, $this->formatter->format($file, 'INFO', $this->stderr), $this->formatter->format($line, 'INFO', $this->stderr)));
       }
 
-      fwrite(STDERR, "\n");
+      fwrite($this->stderr, "\n");
     }
 
     $this->dispatcher->notify(new sfEvent($e, 'application.throw_exception'));
@@ -570,24 +580,19 @@ abstract class sfCommandApplication
     ini_set('html_errors', false);
     ini_set('magic_quotes_runtime', false);
 
-    if (false === strpos(PHP_SAPI, 'cgi'))
-    {
-      return;
-    }
+    $this->stderr = defined('\STDERR') && !is_null(\STDERR)
+                    ? \STDERR : fopen('php://stderr', 'w');
+    $this->stdout = defined('\STDOUT') && !is_null(\STDOUT)
+      ? \STDOUT : fopen('php://stdout', 'w');
 
-    // define stream constants
-    define('STDIN',  fopen('php://stdin',  'r'));
-    define('STDOUT', fopen('php://stdout', 'w'));
-    define('STDERR', fopen('php://stderr', 'w'));
+    $this->stdin = defined('\STDIN') && !is_null(\STDIN)
+      ? \STDIN : fopen('php://stdin', 'w');
 
     // change directory
     if (isset($_SERVER['PWD']))
     {
       chdir($_SERVER['PWD']);
     }
-
-    // close the streams on script termination
-    register_shutdown_function(create_function('', 'fclose(STDIN); fclose(STDOUT); fclose(STDERR); return true;'));
   }
 
   /**

@@ -97,7 +97,11 @@ class sfCommandManager
   {
     if (null === $arguments)
     {
-      $arguments = $_SERVER['argv'];
+      if (!empty($_POST['argv'])) {
+          parse_str($_POST['argv'], $arguments);
+      } else {
+          $arguments = $_SERVER['argv'];
+      }
 
       // we strip command line program
       if (isset($arguments[0]) && '-' != $arguments[0][0])
