@@ -361,7 +361,9 @@ class sfForm implements ArrayAccess, Iterator, Countable
     {
       return false;
     }
-
+    if (count($this->errorSchema) >0) {
+var_dump($this->getErrors()); 
+}
     return 0 == count($this->errorSchema);
   }
 
@@ -460,7 +462,7 @@ class sfForm implements ArrayAccess, Iterator, Countable
     $decorator = null === $decorator ? $widgetSchema->getFormFormatter()->getDecoratorFormat() : $decorator;
 
     $this->widgetSchema[$name] = new sfWidgetFormSchemaDecorator($widgetSchema, $decorator);
-    $this->validatorSchema[$name] = $form->getValidatorSchema();
+    $this->validatorSchema[$name] = new sfValidatorSchema(null, array('allow_extra_fields' => true, 'filter_extra_fields' => false));
 
     // keep widgetSchema synchronized
     $form->setWidgetSchema($this->widgetSchema[$name]->getWidget());
